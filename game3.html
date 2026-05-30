@@ -123,6 +123,7 @@
         let bodyControl = "center"; // "left", "right", "center"
         let bothHandsUpStart = null;
         let singleHandUpStart = null;
+        const SWAP_LEFT_RIGHT = true; // 若模型識別左右反向，設為 true
         const video = document.getElementById('video_source');
         const canvas = document.getElementById('output_canvas');
         const ctx = canvas.getContext('2d');
@@ -187,9 +188,12 @@
 
                     // --- 行為偵測邏輯開始 ---
                     const nose = kp[0];
-                    const leftWrist = kp[9], rightWrist = kp[10];
-                    const leftShoulder = kp[5], rightShoulder = kp[6];
-                    const leftHip = kp[11], rightHip = kp[12];
+                    const leftWrist = kp[SWAP_LEFT_RIGHT ? 10 : 9];
+                    const rightWrist = kp[SWAP_LEFT_RIGHT ? 9 : 10];
+                    const leftShoulder = kp[SWAP_LEFT_RIGHT ? 6 : 5];
+                    const rightShoulder = kp[SWAP_LEFT_RIGHT ? 5 : 6];
+                    const leftHip = kp[SWAP_LEFT_RIGHT ? 12 : 11];
+                    const rightHip = kp[SWAP_LEFT_RIGHT ? 11 : 12];
 
                     const now = Date.now();
 

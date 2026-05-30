@@ -8,6 +8,7 @@ let lastMoveTime = 0;
 let handsUpStartTime = null;
 const COOLDOWN = 1000; // 移動冷卻 1秒
 const SELECT_DURATION = 2000; // 雙手高舉 2秒進入
+const SWAP_LEFT_RIGHT = true; // 若模型左右判斷反向，可設定為 true
 
 // 更新 UI 狀態
 function updateSelection() {
@@ -40,12 +41,15 @@ hands.onResults((results) => {
             drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
             
             const label = results.multiHandedness[index].label; // 'Left' or 'Right'
+            const effectiveLabel = SWAP_LEFT_RIGHT
+                ? (label === 'Left' ? 'Right' : label === 'Right' ? 'Left' : label)
+                : label;
             const yCoord = landmarks[9].y; // 使用掌心位置 (Landmark 9)
 
             // 判斷手是否舉起 (y 座標越小代表越高)
             if (yCoord < 0.4) {
-                if (label === 'Left') leftHandUp = true;
-                if (label === 'Right') rightHandUp = true;
+                if (effectiveLabel === 'Left') leftHandUp = true;
+                if (effectiveLabel === 'Right') rightHandUp = true;
             }
         });
 

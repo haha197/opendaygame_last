@@ -57,6 +57,7 @@
         let winnerIndex = null;
         let countdownSeconds = 5;
         let countdownTimer = null;
+        const SWAP_LEFT_RIGHT = true; // 若模型左右判斷反向，設為 true
         const gameState = [
             { hp: 1000, charge: 0, damage: 20, isBlocking: false, pos: 'left', color: '#4444FF', fishColor: 'blue', attackCount: 0, blockCount: 0, defenseDisabledTime: 0 },
             { hp: 1000, charge: 0, damage: 20, isBlocking: false, pos: 'right', color: '#FF4444', fishColor: 'red', attackCount: 0, blockCount: 0, defenseDisabledTime: 0 }
@@ -150,11 +151,17 @@
 
         function checkActions(keypoints, personIndex, dt) {
             const getKP = (idx) => (keypoints[idx] && keypoints[idx].score > 0.3) ? keypoints[idx] : null;
-            const lShoulder = getKP(5);
-            const rShoulder = getKP(6);
-            const lWrist = getKP(9);
-            const rWrist = getKP(10);
-            const lHip = getKP(11);
+            const leftShoulderIndex = SWAP_LEFT_RIGHT ? 6 : 5;
+            const rightShoulderIndex = SWAP_LEFT_RIGHT ? 5 : 6;
+            const leftWristIndex = SWAP_LEFT_RIGHT ? 10 : 9;
+            const rightWristIndex = SWAP_LEFT_RIGHT ? 9 : 10;
+            const leftHipIndex = SWAP_LEFT_RIGHT ? 12 : 11;
+
+            const lShoulder = getKP(leftShoulderIndex);
+            const rShoulder = getKP(rightShoulderIndex);
+            const lWrist = getKP(leftWristIndex);
+            const rWrist = getKP(rightWristIndex);
+            const lHip = getKP(leftHipIndex);
 
             let actionName = "站立中";
             let color = "white";

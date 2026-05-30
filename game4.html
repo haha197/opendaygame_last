@@ -38,6 +38,7 @@
         let pearlCount = 0;
         let handPositions = { left: null, right: null };
         let gestureState = { attract: false, repel: false, back: false };
+        const SWAP_LEFT_RIGHT = true; // 若模型識別左右反向，設為 true
         
         const baseScrollSpeed = 1.5;
         let scrollSpeed = baseScrollSpeed;
@@ -138,7 +139,10 @@
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 results.multiHandLandmarks.forEach((landmarks, i) => {
-                    const handedness = results.multiHandedness[i].label;
+                    const rawHandedness = results.multiHandedness[i].label;
+                    const handedness = SWAP_LEFT_RIGHT
+                        ? (rawHandedness === 'Left' ? 'Right' : rawHandedness === 'Right' ? 'Left' : rawHandedness)
+                        : rawHandedness;
                     const centerX = landmarks[9].x * canvas.width;
                     const centerY = landmarks[9].y * canvas.height;
 

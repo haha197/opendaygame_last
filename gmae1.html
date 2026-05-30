@@ -318,6 +318,7 @@
     const aiFloorDelay = 400; // AI 的極限速度（不能低於此值，否則人類贏不了）
     const accelerationRate = 0.95; // 每次縮減倍率 (越小加速越快)
     let gestureLocked = false;
+    const SWAP_LEFT_RIGHT = true; // 若模型左右判斷反向，設為 true
     const videoElement = document.getElementById('input_video');
     const canvasElement = document.getElementById('output_canvas');
     const canvasCtx = canvasElement.getContext('2d');
@@ -369,7 +370,10 @@
         results.multiHandLandmarks.length > 0
       ) {
         const landmarks = results.multiHandLandmarks[0];
-        const handedness = results.multiHandedness[0].label;
+        const rawHandedness = results.multiHandedness[0].label;
+        const handedness = SWAP_LEFT_RIGHT
+          ? (rawHandedness === 'Left' ? 'Right' : rawHandedness === 'Right' ? 'Left' : rawHandedness)
+          : rawHandedness;
 
         // 繪製骨架 (保持原樣)
         drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {

@@ -64,6 +64,7 @@
         let lastSwitchTime = 0; 
         const SWITCH_COOLDOWN = 1000; 
         const WAIT_SECONDS = 3; 
+        const SWAP_LEFT_RIGHT = true; // 若模型左右判斷反向，可設定為 true
 
         async function setupCamera() {
             try {
@@ -141,8 +142,10 @@
             const leftShoulder = keypoints[5];
             const rightShoulder = keypoints[6];
 
-            const isLeftUp = leftWrist.score > 0.3 && leftWrist.y < leftShoulder.y;
-            const isRightUp = rightWrist.score > 0.3 && rightWrist.y < rightShoulder.y;
+            const actualLeftUp = leftWrist.score > 0.3 && leftWrist.y < leftShoulder.y;
+            const actualRightUp = rightWrist.score > 0.3 && rightWrist.y < rightShoulder.y;
+            const isLeftUp = SWAP_LEFT_RIGHT ? actualRightUp : actualLeftUp;
+            const isRightUp = SWAP_LEFT_RIGHT ? actualLeftUp : actualRightUp;
 
             if (isLeftUp && isRightUp) {
                 if (!bothHandsUpStart) bothHandsUpStart = now;
