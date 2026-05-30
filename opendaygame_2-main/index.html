@@ -39,7 +39,7 @@
     <div id="status">準備中...</div>
 
     <div class="container">
-        <img id="video_source" src="http://localhost:3000/video_feed" crossorigin="anonymous" onerror="handleImageError()">
+        <video id="video_source" autoplay playsinline muted></video>
         <canvas id="output_canvas"></canvas>
     </div>
 
@@ -52,8 +52,7 @@
     </nav>
 
     <script>
-        const videoUrl = "http://localhost:3000/video_feed";
-        const img = document.getElementById('video_source');
+        const video = document.getElementById('video_source');
         const canvas = document.getElementById('output_canvas');
         const ctx = canvas.getContext('2d');
         const status = document.getElementById('status');
@@ -66,21 +65,15 @@
         const SWITCH_COOLDOWN = 1000; 
         const WAIT_SECONDS = 3; 
 
-        // 監控 500 錯誤的函式
-        async function checkServerStatus() {
+        async function setupCamera() {
             try {
-                const response = await fetch(videoUrl, { method: 'HEAD', mode: 'no-cors' });
-                // 注意：由於跨域串流(mjpeg)通常無法直接讀取 status code，
-                // 這裡我們主要依賴下面的 handleImageError 和定期檢查。
-            } catch (e) {
-                console.log("偵測到連接異常");
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+                await video.play();
+            } catch (error) {
+                status.innerText = "無法啟動 webcam：" + error.message;
+                throw error;
             }
-        }
-
-        // 當圖片載入失敗（如 500 錯誤導致串流中斷）立即重整
-        function handleImageError() {
-            console.log("影像來源錯誤，正在重新載入頁面...");
-            location.reload();
         }
 
         function updateMenuUI() {
@@ -108,19 +101,12 @@
                     enableTracking: true
                 };
                 
+                await setupCamera();
                 status.innerText = "正在載入模型...";
                 detector = await poseDetection.createDetector(model, detectorConfig);
                 status.innerText = "偵測中：左/右手切換，雙手高舉確認";
                 
                 detectPose();
-                
-                // 每 5 秒額外檢查一次影像節點是否掛掉
-                setInterval(() => {
-                    if (img.naturalWidth === 0 && img.complete) {
-                        handleImageError();
-                    }
-                }, 5000);
-
             } catch (error) {
                 status.innerText = "初始化失敗，3秒後嘗試重整...";
                 await delay(3000);
@@ -129,13 +115,13 @@
         }
 
         async function detectPose() {
-            if (detector && img.complete && img.naturalWidth !== 0) {
-                canvas.width = img.width || 640;
-                canvas.height = img.height || 480;
+            if (detector && video.readyState >= 2 && video.videoWidth > 0) {
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
 
-                const poses = await detector.estimatePoses(img);
+                const poses = await detector.estimatePoses(video);
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
                 if (poses.length > 0) {
                     processGestures(poses[0].keypoints);

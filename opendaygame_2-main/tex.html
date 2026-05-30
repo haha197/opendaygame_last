@@ -20,12 +20,12 @@
     <div id="status">正在初始化模型...</div>
 
     <div class="container">
-        <img id="video_source" src="http://localhost:3000/video_feed" crossorigin="anonymous" >
+        <video id="video_source" autoplay playsinline muted></video>
         <canvas id="output_canvas"></canvas>
     </div>
 
     <script>
-        const img = document.getElementById('video_source');
+        const video = document.getElementById('video_source');
         const canvas = document.getElementById('output_canvas');
         const ctx = canvas.getContext('2d');
         const status = document.getElementById('status');
@@ -33,7 +33,17 @@
         let singleHandUpStart = null;
     
         let detector;
-    
+
+    async function setupCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            video.srcObject = stream;
+            await video.play();
+        } catch (error) {
+            status.innerText = "無法啟動 webcam：" + error.message;
+            throw error;
+        }
+    }
         async function init() {
             try {
                 // 修正點 1: 使用 poseDetection (小駝峰)
@@ -43,6 +53,7 @@
                     enableTracking: true
                 };
                 
+                await setupCamera();
                 status.innerText = "正在載入模型...";
                 detector = await poseDetection.createDetector(model, detectorConfig);
                 status.innerText = "模型載入完成，偵測中...";
@@ -55,14 +66,14 @@
         }
     
         async function detectPose() {
-            if (detector && img.complete && img.naturalWidth !== 0) {
-                canvas.width = img.width || 640;
-                canvas.height = img.height || 480;
-    
-                // 修正點 2: 使用 detector.estimatePoses
-                const poses = await detector.estimatePoses(img);
-    
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+if (detector && video.readyState >= 2 && video.videoWidth > 0) {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            // 修正點 2: 使用 detector.estimatePoses
+            const poses = await detector.estimatePoses(video);
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
                 // 偵測前兩個人
                 poses.slice(0, 2).forEach(pose => {

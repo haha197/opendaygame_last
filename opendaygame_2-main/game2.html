@@ -24,14 +24,14 @@
     <div id="status">正在初始化模型...</div>
 
     <div class="container">
-        <img id="video_source" src="http://localhost:3000/video_feed" crossorigin="anonymous" >
+        <video id="video_source" autoplay playsinline muted></video>
         <canvas id="output_canvas"></canvas>
         <div id="action-overlay"></div>
         <div id="end-screen"></div>
     </div>
 
     <script>
-        const img = document.getElementById('video_source');
+        const video = document.getElementById('video_source');
         const canvas = document.getElementById('output_canvas');
         const ctx = canvas.getContext('2d');
         const status = document.getElementById('status');
@@ -39,6 +39,17 @@
         const endScreen = document.getElementById('end-screen');
     
         let detector;
+
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+                await video.play();
+            } catch (error) {
+                status.innerText = "無法啟動 webcam：" + error.message;
+                throw error;
+            }
+        }
         
         // --- 遊戲邏輯變數 ---
         let lastTime = performance.now();
@@ -60,6 +71,7 @@
                     enableTracking: true
                 };
                 
+                await setupCamera();
                 status.innerText = "正在載入模型引擎...";
                 detector = await poseDetection.createDetector(model, detectorConfig);
                 status.innerText = "模型初始化成功，偵測中...";
@@ -76,12 +88,12 @@
             const deltaTime = (now - lastTime) / 1000;
             lastTime = now;
 
-            if (detector && img.complete && img.naturalWidth !== 0) {
-                canvas.width = img.width || 640;
-                canvas.height = img.height || 480;
+            if (detector && video.readyState >= 2 && video.videoWidth > 0) {
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
     
-                const poses = await detector.estimatePoses(img);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const poses = await detector.estimatePoses(video);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 actionOverlay.innerHTML = '';
 
                 // 重置每幀的防禦狀態

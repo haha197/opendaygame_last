@@ -17,7 +17,7 @@
     <h1>逆水魚群引導遊戲</h1>
     <div id="status">正在初始化攝像機串流...</div>
     <div id="info">魚群數量: 10 | 珍珠: 0</div>
-    <img id="input_stream" src="http://localhost:3000/video_feed" style="display: none;" crossorigin="anonymous">
+    <video id="input_video" autoplay playsinline muted style="display: none;"></video>
     <canvas id="game_canvas" width="800" height="600"></canvas>
 
     <script>
@@ -25,7 +25,7 @@
         const ctx = canvas.getContext('2d');
         const status = document.getElementById('status');
         const info = document.getElementById('info');
-        const imageElement = document.getElementById('input_stream');
+        const videoElement = document.getElementById('input_video');
 
         // --- 遊戲變數 ---
         let fish = [];
@@ -440,27 +440,29 @@
         hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         hands.onResults(updateGestureState);
 
-        // 啟動預測迴圈
-        async function startCamera() {
-            status.textContent = "串流已連接，遊戲開始！";
-            initFish();
-            initObstacles();
-            initPearls();
-            initRocks();
-            gameLoop();
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480,
+        });
 
-            async function predict() {
-                if (imageElement.complete && imageElement.naturalWidth !== 0) {
-                    await hands.send({ image: imageElement });
-                }
-                setTimeout(predict, 50); // 稍微延遲減輕 CPU 負擔
+        async function startCamera() {
+            try {
+                await camera.start();
+                status.textContent = "webcam 已連接，遊戲開始！";
+                initFish();
+                initObstacles();
+                initPearls();
+                initRocks();
+                gameLoop();
+            } catch (error) {
+                status.textContent = "無法啟動 webcam：" + error.message;
             }
-            predict();
         }
 
-        imageElement.onload = startCamera;
-        // 如果 image 已經在緩存中
-        if (imageElement.complete) startCamera();
+        startCamera();
     </script>
 </body>
 </html>

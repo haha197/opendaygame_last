@@ -91,7 +91,7 @@
 
     <div class="detector-container">
         <div id="status">正在初始化模型...</div>
-        <img id="video_source" src="http://localhost:3000/video_feed" crossorigin="anonymous" >
+        <video id="video_source" autoplay playsinline muted style="display:block; width:100%; height:100%; object-fit: cover;"></video>
         <canvas id="output_canvas"></canvas>
         <div id="debug_info">偵測狀態：等待中</div>
     </div>
@@ -123,11 +123,22 @@
         let bodyControl = "center"; // "left", "right", "center"
         let bothHandsUpStart = null;
         let singleHandUpStart = null;
-        const img = document.getElementById('video_source');
+        const video = document.getElementById('video_source');
         const canvas = document.getElementById('output_canvas');
         const ctx = canvas.getContext('2d');
         const statusMsg = document.getElementById('status');
         const debugInfo = document.getElementById('debug_info');
+
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = stream;
+                await video.play();
+            } catch (error) {
+                statusMsg.innerText = "無法啟動 webcam：" + error.message;
+                throw error;
+            }
+        }
 
         document.getElementById('best').innerText = bestDistance;
 
@@ -139,6 +150,7 @@
                     modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING,
                     enableTracking: true
                 };
+                await setupCamera();
                 statusMsg.innerText = "正在載入模型...";
                 detector = await poseDetection.createDetector(model, detectorConfig);
                 statusMsg.innerText = "模型載入完成";
@@ -153,18 +165,18 @@
 
         async function detectPose() {
             // 確保偵測器與影像都準備好了
-            if (detector && img.complete && img.naturalWidth !== 0) {
+            if (detector && video.readyState >= 2 && video.videoWidth > 0) {
                 
                 // 自動校正畫布尺寸
-                if (canvas.width !== img.width) {
-                    canvas.width = img.width || 640;
-                    canvas.height = img.height || 480;
+                if (canvas.width !== video.videoWidth) {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
                 }
 
-                const poses = await detector.estimatePoses(img);
+                const poses = await detector.estimatePoses(video);
                 
                 // 繪製背景影像
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
                 if (poses.length > 0) {
                     const pose = poses[0]; // 只追蹤第一個人

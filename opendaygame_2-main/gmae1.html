@@ -259,7 +259,7 @@
 </head>
 
 <body>
-  <img id="input_stream" src="http://localhost:3000/video_feed" style="display: none;" crossorigin="anonymous">
+  <video id="input_video" autoplay playsinline muted style="display: none;"></video>
   <canvas id="output_canvas" width="241" height="135"></canvas>
   <div id="output"></div>
   <div id="game-info">
@@ -429,34 +429,11 @@
       width: 640,
       height: 480,
     });
-    // 取代原本的 camera.start()
-    let imageElement = document.getElementById('input_stream')
-    function streamToMediaPipe() {
-      if (imageElement.complete && imageElement.naturalWidth !== 0) {
-        // 將圖片傳送給 MediaPipe 處理
-        hands.send({ image: imageElement });
-      }
-      requestAnimationFrame(streamToMediaPipe);
-    }
 
-    async function predictLoop() {
-      // 檢查圖片是否已經加載且有內容
-      if (imageElement.complete && imageElement.naturalWidth !== 0) {
-        try {
-          await hands.send({ image: imageElement });
-        } catch (e) {
-          console.error("MediaPipe 處理錯誤:", e);
-        }
-      }
-      // 持續循環
-      requestAnimationFrame(predictLoop);
-    }
-
-    // 當圖片開始載入後啟動循環
-    imageElement.onload = () => {
-      console.log("串流已連接，啟動辨識...");
-      predictLoop();
-    };
+    camera.start().catch(error => {
+      console.error('無法啟動 webcam：', error);
+      outputDiv.textContent = '無法啟動 webcam：' + error.message;
+    });
     const fruits = ['🐡', '🐠', '🐟', '🏊‍♂️'];
     let players = [
       { id: 1, name: '你', deck: [], pile: [], isOut: false },
@@ -731,13 +708,19 @@
       const playerOut = players[0].isOut;
     
       if (allAIsOut) {
-        imageElement.src = '';
+        if (videoElement && videoElement.srcObject) {
+          videoElement.srcObject.getTracks().forEach(track => track.stop());
+          videoElement.srcObject = null;
+        }
         showEndScreen('勝利！', '太強了！你擊敗了所有 AI，成為最終贏家！');
         return;
       }
 
       if (playerOut) {
-        imageElement.src = '';
+        if (videoElement && videoElement.srcObject) {
+          videoElement.srcObject.getTracks().forEach(track => track.stop());
+          videoElement.srcObject = null;
+        }
         showEndScreen('遊戲結束', '你已經沒有手牌了，遊戲結束！');
         return;
       }
